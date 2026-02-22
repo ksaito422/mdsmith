@@ -152,4 +152,58 @@ class TestGenerator < Minitest::Test
     expected = "<h1>Main Title</h1>\n<p>First paragraph.</p>\n<h2>Subtitle</h2>\n<p>Second paragraph.</p>"
     assert_equal expected, html
   end
+
+  def test_generate_simple_list
+    ast = Mdsmith::Node.new(:document)
+    ul = Mdsmith::Node.new(:unordered_list)
+    ul.add_child(Mdsmith::Node.new(:list_item, content: "apple"))
+    ul.add_child(Mdsmith::Node.new(:list_item, content: "banana"))
+    ast.add_child(ul)
+
+    html = Mdsmith::Generator.new(ast).generate
+
+    expected = "<ul>\n  <li>apple</li>\n  <li>banana</li>\n</ul>"
+    assert_equal expected, html
+  end
+
+  def test_generate_list_item_has_indentation
+    ast = Mdsmith::Node.new(:document)
+    ul = Mdsmith::Node.new(:unordered_list)
+    ul.add_child(Mdsmith::Node.new(:list_item, content: "item"))
+    ast.add_child(ul)
+
+    html = Mdsmith::Generator.new(ast).generate
+
+    assert_match(/^  <li>/, html)
+  end
+
+  def test_generate_nested_list
+    ast = Mdsmith::Node.new(:document)
+    ul = Mdsmith::Node.new(:unordered_list)
+
+    fruit = Mdsmith::Node.new(:list_item, content: "fruit")
+    sub_ul = Mdsmith::Node.new(:unordered_list)
+    sub_ul.add_child(Mdsmith::Node.new(:list_item, content: "apple"))
+    fruit.add_child(sub_ul)
+
+    ul.add_child(fruit)
+    ul.add_child(Mdsmith::Node.new(:list_item, content: "vegetable"))
+    ast.add_child(ul)
+
+    html = Mdsmith::Generator.new(ast).generate
+
+    expected = "<ul>\n  <li>fruit\n    <ul>\n      <li>apple</li>\n    </ul>\n  </li>\n  <li>vegetable</li>\n</ul>"
+    assert_equal expected, html
+  end
+
+  def test_generate_list_escapes_html
+    ast = Mdsmith::Node.new(:document)
+    ul = Mdsmith::Node.new(:unordered_list)
+    ul.add_child(Mdsmith::Node.new(:list_item, content: "<script> & \"test\""))
+    ast.add_child(ul)
+
+    html = Mdsmith::Generator.new(ast).generate
+
+    assert_includes html, "&lt;script&gt; &amp; &quot;test&quot;"
+  end
 end

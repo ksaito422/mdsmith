@@ -122,4 +122,84 @@ class TestParser < Minitest::Test
     assert_equal "Special & <chars>", ast.children[0].attributes[:content]
     assert_equal "Text with \"quotes\"", ast.children[1].attributes[:content]
   end
+
+  def test_parse_single_list_item
+    tokens = [Mdsmith::Token.new(:list_item, "apple", depth: 0)]
+    ast = Mdsmith::Parser.new(tokens).parse
+
+    assert_equal 1, ast.children.length
+    ul = ast.children[0]
+    assert_equal :unordered_list, ul.type
+    assert_equal 1, ul.children.length
+    assert_equal :list_item, ul.children[0].type
+    assert_equal "apple", ul.children[0].attributes[:content]
+  end
+
+  def test_parse_multiple_list_items_flat
+    tokens = [
+      Mdsmith::Token.new(:list_item, "apple",  depth: 0),
+      Mdsmith::Token.new(:list_item, "banana", depth: 0),
+      Mdsmith::Token.new(:list_item, "cherry", depth: 0)
+    ]
+    ast = Mdsmith::Parser.new(tokens).parse
+
+    assert_equal 1, ast.children.length
+    ul = ast.children[0]
+    assert_equal :unordered_list, ul.type
+    assert_equal 3, ul.children.length
+    assert_equal "apple",  ul.children[0].attributes[:content]
+    assert_equal "banana", ul.children[1].attributes[:content]
+    assert_equal "cherry", ul.children[2].attributes[:content]
+  end
+
+  def test_parse_nested_list
+    tokens = [
+      Mdsmith::Token.new(:list_item, "fruit",  depth: 0),
+      Mdsmith::Token.new(:list_item, "apple",  depth: 1),
+      Mdsmith::Token.new(:list_item, "banana", depth: 1)
+    ]
+    ast = Mdsmith::Parser.new(tokens).parse
+
+    ul = ast.children[0]
+    assert_equal :unordered_list, ul.type
+    assert_equal 1, ul.children.length
+
+    fruit = ul.children[0]
+    assert_equal "fruit", fruit.attributes[:content]
+    assert_equal 1, fruit.children.length
+
+    sub_ul = fruit.children[0]
+    assert_equal :unordered_list, sub_ul.type
+    assert_equal 2, sub_ul.children.length
+    assert_equal "apple",  sub_ul.children[0].attributes[:content]
+    assert_equal "banana", sub_ul.children[1].attributes[:content]
+  end
+
+  def test_parse_list_interrupted_by_text_creates_two_lists
+    tokens = [
+      Mdsmith::Token.new(:list_item, "item1", depth: 0),
+      Mdsmith::Token.new(:text,      "paragraph"),
+      Mdsmith::Token.new(:list_item, "item2", depth: 0)
+    ]
+    ast = Mdsmith::Parser.new(tokens).parse
+
+    assert_equal 3, ast.children.length
+    assert_equal :unordered_list, ast.children[0].type
+    assert_equal :paragraph,      ast.children[1].type
+    assert_equal :unordered_list, ast.children[2].type
+  end
+
+  def test_parse_nested_then_back_to_root
+    tokens = [
+      Mdsmith::Token.new(:list_item, "a",    depth: 0),
+      Mdsmith::Token.new(:list_item, "a-1",  depth: 1),
+      Mdsmith::Token.new(:list_item, "b",    depth: 0)
+    ]
+    ast = Mdsmith::Parser.new(tokens).parse
+
+    ul = ast.children[0]
+    assert_equal 2, ul.children.length
+    assert_equal "a", ul.children[0].attributes[:content]
+    assert_equal "b", ul.children[1].attributes[:content]
+  end
 end

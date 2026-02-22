@@ -157,4 +157,86 @@ class TestMdSmith < Minitest::Test
 
     tempfile.unlink
   end
+
+  def test_integration_simple_list
+    tempfile = Tempfile.new(['test', '.md'])
+    tempfile.write("- Item 1\n- Item 2\n- Item 3\n")
+    tempfile.close
+
+    stdout, _stderr, status = Open3.capture3("ruby", "mdsmith.rb", tempfile.path)
+
+    expected = "<ul>\n  <li>Item 1</li>\n  <li>Item 2</li>\n  <li>Item 3</li>\n</ul>"
+    assert_equal expected, stdout.strip
+    assert_equal 0, status.exitstatus
+
+    tempfile.unlink
+  end
+
+  def test_integration_nested_list_two_spaces
+    tempfile = Tempfile.new(['test', '.md'])
+    tempfile.write("- fruit\n  - apple\n  - banana\n- vegetable\n")
+    tempfile.close
+
+    stdout, _stderr, status = Open3.capture3("ruby", "mdsmith.rb", tempfile.path)
+
+    expected = "<ul>\n  <li>fruit\n    <ul>\n      <li>apple</li>\n      <li>banana</li>\n    </ul>\n  </li>\n  <li>vegetable</li>\n</ul>"
+    assert_equal expected, stdout.strip
+    assert_equal 0, status.exitstatus
+
+    tempfile.unlink
+  end
+
+  def test_integration_nested_list_tab
+    tempfile = Tempfile.new(['test', '.md'])
+    tempfile.write("- fruit\n\t- apple\n- vegetable\n")
+    tempfile.close
+
+    stdout, _stderr, status = Open3.capture3("ruby", "mdsmith.rb", tempfile.path)
+
+    expected = "<ul>\n  <li>fruit\n    <ul>\n      <li>apple</li>\n    </ul>\n  </li>\n  <li>vegetable</li>\n</ul>"
+    assert_equal expected, stdout.strip
+    assert_equal 0, status.exitstatus
+
+    tempfile.unlink
+  end
+
+  def test_integration_one_space_is_text
+    tempfile = Tempfile.new(['test', '.md'])
+    tempfile.write(" - not a list\n")
+    tempfile.close
+
+    stdout, _stderr, status = Open3.capture3("ruby", "mdsmith.rb", tempfile.path)
+
+    assert_equal "<p>- not a list</p>", stdout.strip
+    assert_equal 0, status.exitstatus
+
+    tempfile.unlink
+  end
+
+  def test_integration_three_spaces_is_text
+    tempfile = Tempfile.new(['test', '.md'])
+    tempfile.write("   - not a list\n")
+    tempfile.close
+
+    stdout, _stderr, status = Open3.capture3("ruby", "mdsmith.rb", tempfile.path)
+
+    assert_equal "<p>- not a list</p>", stdout.strip
+    assert_equal 0, status.exitstatus
+
+    tempfile.unlink
+  end
+
+  def test_integration_list_with_headings
+    tempfile = Tempfile.new(['test', '.md'])
+    tempfile.write("# Title\n- Item 1\n- Item 2\n")
+    tempfile.close
+
+    stdout, _stderr, status = Open3.capture3("ruby", "mdsmith.rb", tempfile.path)
+
+    expected = "<h1>Title</h1>\n<ul>\n  <li>Item 1</li>\n  <li>Item 2</li>\n</ul>"
+    assert_equal expected, stdout.strip
+    assert_equal 0, status.exitstatus
+
+    tempfile.unlink
+  end
 end
