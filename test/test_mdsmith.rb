@@ -3,6 +3,24 @@ require "tempfile"
 require "open3"
 
 class TestMdSmith < Minitest::Test
+  def wrap_html(body_content)
+    header = <<~HTML
+      <!DOCTYPE html>
+      <html lang="ja">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Document</title>
+      </head>
+      <body>
+    HTML
+    footer = <<~HTML
+      </body>
+      </html>
+    HTML
+    header + body_content + "\n" + footer
+  end
+
   def setup
     @tempfile = Tempfile.new('test.md')
     @tempfile.write("# Title\n\nThis is a sample markdown file.\n")
@@ -35,7 +53,7 @@ class TestMdSmith < Minitest::Test
   def test_no_arguments
     stdout, stderr, status = Open3.capture3("ruby", "mdsmith.rb")
 
-    assert_equal "Usage: ruby mdsmith.rb <markdown_file>\n", stdout
+    assert_equal "Usage: ruby mdsmith.rb <markdown_file> [-o <output_file>]\n", stdout
     assert_equal "", stderr
     assert_equal 1, status.exitstatus
   end
@@ -47,7 +65,7 @@ class TestMdSmith < Minitest::Test
 
     stdout, stderr, status = Open3.capture3("ruby", "mdsmith.rb", tempfile.path)
 
-    assert_equal "<h1>Hello World</h1>", stdout.strip
+    assert_equal wrap_html("<h1>Hello World</h1>").strip, stdout.strip
     assert_equal "", stderr
     assert_equal 0, status.exitstatus
 
@@ -61,7 +79,7 @@ class TestMdSmith < Minitest::Test
 
     stdout, stderr, status = Open3.capture3("ruby", "mdsmith.rb", tempfile.path)
 
-    assert_equal "<h1>Title</h1>\n<p>This is a paragraph.</p>", stdout.strip
+    assert_equal wrap_html("<h1>Title</h1>\n<p>This is a paragraph.</p>").strip, stdout.strip
     assert_equal "", stderr
     assert_equal 0, status.exitstatus
 
@@ -79,7 +97,7 @@ class TestMdSmith < Minitest::Test
 
     stdout, stderr, status = Open3.capture3("ruby", "mdsmith.rb", tempfile.path)
 
-    expected = "<h1>Main Title</h1>\n<h2>Subtitle</h2>\n<h3>Sub-subtitle</h3>"
+    expected = wrap_html("<h1>Main Title</h1>\n<h2>Subtitle</h2>\n<h3>Sub-subtitle</h3>").strip
     assert_equal expected, stdout.strip
     assert_equal "", stderr
     assert_equal 0, status.exitstatus
@@ -101,7 +119,7 @@ class TestMdSmith < Minitest::Test
 
     stdout, stderr, status = Open3.capture3("ruby", "mdsmith.rb", tempfile.path)
 
-    expected = "<h1>Welcome</h1>\n<p>This is the introduction.</p>\n<h2>Features</h2>\n<p>Here are the features.</p>\n<h2>Installation</h2>\n<p>Follow these steps.</p>"
+    expected = wrap_html("<h1>Welcome</h1>\n<p>This is the introduction.</p>\n<h2>Features</h2>\n<p>Here are the features.</p>\n<h2>Installation</h2>\n<p>Follow these steps.</p>").strip
     assert_equal expected, stdout.strip
     assert_equal "", stderr
     assert_equal 0, status.exitstatus
@@ -116,7 +134,7 @@ class TestMdSmith < Minitest::Test
 
     stdout, stderr, status = Open3.capture3("ruby", "mdsmith.rb", tempfile.path)
 
-    assert_equal "<h1>&lt;Title&gt; &amp; &quot;Subtitle&quot;</h1>", stdout.strip
+    assert_equal wrap_html("<h1>&lt;Title&gt; &amp; &quot;Subtitle&quot;</h1>").strip, stdout.strip
     assert_equal "", stderr
     assert_equal 0, status.exitstatus
 
@@ -136,7 +154,7 @@ class TestMdSmith < Minitest::Test
 
     stdout, stderr, status = Open3.capture3("ruby", "mdsmith.rb", tempfile.path)
 
-    expected = "<h1>Title</h1>\n<p>Paragraph after blank line.</p>\n<h2>Subtitle</h2>"
+    expected = wrap_html("<h1>Title</h1>\n<p>Paragraph after blank line.</p>\n<h2>Subtitle</h2>").strip
     assert_equal expected, stdout.strip
     assert_equal "", stderr
     assert_equal 0, status.exitstatus
@@ -151,7 +169,7 @@ class TestMdSmith < Minitest::Test
 
     stdout, stderr, status = Open3.capture3("ruby", "mdsmith.rb", tempfile.path)
 
-    assert_equal "", stdout.strip
+    assert_equal wrap_html("").strip, stdout.strip
     assert_equal "", stderr
     assert_equal 0, status.exitstatus
 
@@ -165,7 +183,7 @@ class TestMdSmith < Minitest::Test
 
     stdout, _stderr, status = Open3.capture3("ruby", "mdsmith.rb", tempfile.path)
 
-    expected = "<ul>\n  <li>Item 1</li>\n  <li>Item 2</li>\n  <li>Item 3</li>\n</ul>"
+    expected = wrap_html("<ul>\n  <li>Item 1</li>\n  <li>Item 2</li>\n  <li>Item 3</li>\n</ul>").strip
     assert_equal expected, stdout.strip
     assert_equal 0, status.exitstatus
 
@@ -179,7 +197,7 @@ class TestMdSmith < Minitest::Test
 
     stdout, _stderr, status = Open3.capture3("ruby", "mdsmith.rb", tempfile.path)
 
-    expected = "<ul>\n  <li>fruit\n    <ul>\n      <li>apple</li>\n      <li>banana</li>\n    </ul>\n  </li>\n  <li>vegetable</li>\n</ul>"
+    expected = wrap_html("<ul>\n  <li>fruit\n    <ul>\n      <li>apple</li>\n      <li>banana</li>\n    </ul>\n  </li>\n  <li>vegetable</li>\n</ul>").strip
     assert_equal expected, stdout.strip
     assert_equal 0, status.exitstatus
 
@@ -193,7 +211,7 @@ class TestMdSmith < Minitest::Test
 
     stdout, _stderr, status = Open3.capture3("ruby", "mdsmith.rb", tempfile.path)
 
-    expected = "<ul>\n  <li>fruit\n    <ul>\n      <li>apple</li>\n    </ul>\n  </li>\n  <li>vegetable</li>\n</ul>"
+    expected = wrap_html("<ul>\n  <li>fruit\n    <ul>\n      <li>apple</li>\n    </ul>\n  </li>\n  <li>vegetable</li>\n</ul>").strip
     assert_equal expected, stdout.strip
     assert_equal 0, status.exitstatus
 
@@ -207,7 +225,7 @@ class TestMdSmith < Minitest::Test
 
     stdout, _stderr, status = Open3.capture3("ruby", "mdsmith.rb", tempfile.path)
 
-    assert_equal "<p>- not a list</p>", stdout.strip
+    assert_equal wrap_html("<p>- not a list</p>").strip, stdout.strip
     assert_equal 0, status.exitstatus
 
     tempfile.unlink
@@ -220,7 +238,7 @@ class TestMdSmith < Minitest::Test
 
     stdout, _stderr, status = Open3.capture3("ruby", "mdsmith.rb", tempfile.path)
 
-    assert_equal "<p>- not a list</p>", stdout.strip
+    assert_equal wrap_html("<p>- not a list</p>").strip, stdout.strip
     assert_equal 0, status.exitstatus
 
     tempfile.unlink
@@ -233,7 +251,7 @@ class TestMdSmith < Minitest::Test
 
     stdout, _stderr, status = Open3.capture3("ruby", "mdsmith.rb", tempfile.path)
 
-    expected = "<h1>Title</h1>\n<ul>\n  <li>Item 1</li>\n  <li>Item 2</li>\n</ul>"
+    expected = wrap_html("<h1>Title</h1>\n<ul>\n  <li>Item 1</li>\n  <li>Item 2</li>\n</ul>").strip
     assert_equal expected, stdout.strip
     assert_equal 0, status.exitstatus
 

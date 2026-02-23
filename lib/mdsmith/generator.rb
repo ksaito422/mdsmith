@@ -5,7 +5,20 @@ module Mdsmith
     end
 
     def generate
-      render_node(@ast)
+      body_content = render_node(@ast)
+      <<~HTML
+        <!DOCTYPE html>
+        <html lang="ja">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Document</title>
+        </head>
+        <body>
+        #{body_content}
+        </body>
+        </html>
+      HTML
     end
 
     private

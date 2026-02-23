@@ -5,8 +5,15 @@ require_relative 'lib/mdsmith/parser'
 require_relative 'lib/mdsmith/generator'
 
 if ARGV.empty?
-  puts "Usage: ruby mdsmith.rb <markdown_file>"
+  puts "Usage: ruby mdsmith.rb <markdown_file> [-o <output_file>]"
   exit 1
+end
+
+output_file = nil
+if (i = ARGV.index("-o"))
+  output_file = ARGV[i + 1]
+  ARGV.delete_at(i + 1)
+  ARGV.delete_at(i)
 end
 
 f = ARGV[0]
@@ -27,4 +34,8 @@ ast = parser.parse
 generator = Mdsmith::Generator.new(ast)
 html = generator.generate
 
-puts html
+if output_file
+  File.write(output_file, html)
+else
+  puts html
+end

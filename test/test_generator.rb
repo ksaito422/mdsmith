@@ -3,12 +3,30 @@ require_relative "../lib/mdsmith/node"
 require_relative "../lib/mdsmith/generator"
 
 class TestGenerator < Minitest::Test
+  def wrap_html(body_content)
+    header = <<~HTML
+      <!DOCTYPE html>
+      <html lang="ja">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Document</title>
+      </head>
+      <body>
+    HTML
+    footer = <<~HTML
+      </body>
+      </html>
+    HTML
+    header + body_content + "\n" + footer
+  end
+
   def test_generate_empty_document
     ast = Mdsmith::Node.new(:document)
     generator = Mdsmith::Generator.new(ast)
     html = generator.generate
 
-    assert_equal "", html
+    assert_equal wrap_html(""), html
   end
 
   def test_generate_heading_level_1
@@ -19,7 +37,7 @@ class TestGenerator < Minitest::Test
     generator = Mdsmith::Generator.new(ast)
     html = generator.generate
 
-    assert_equal "<h1>Title</h1>", html
+    assert_equal wrap_html("<h1>Title</h1>"), html
   end
 
   def test_generate_heading_level_2
@@ -30,7 +48,7 @@ class TestGenerator < Minitest::Test
     generator = Mdsmith::Generator.new(ast)
     html = generator.generate
 
-    assert_equal "<h2>Subtitle</h2>", html
+    assert_equal wrap_html("<h2>Subtitle</h2>"), html
   end
 
   def test_generate_heading_level_6
@@ -41,7 +59,7 @@ class TestGenerator < Minitest::Test
     generator = Mdsmith::Generator.new(ast)
     html = generator.generate
 
-    assert_equal "<h6>Small</h6>", html
+    assert_equal wrap_html("<h6>Small</h6>"), html
   end
 
   def test_generate_paragraph
@@ -52,7 +70,7 @@ class TestGenerator < Minitest::Test
     generator = Mdsmith::Generator.new(ast)
     html = generator.generate
 
-    assert_equal "<p>This is text.</p>", html
+    assert_equal wrap_html("<p>This is text.</p>"), html
   end
 
   def test_generate_multiple_nodes
@@ -65,7 +83,7 @@ class TestGenerator < Minitest::Test
     generator = Mdsmith::Generator.new(ast)
     html = generator.generate
 
-    assert_equal "<h1>Title</h1>\n<p>Text</p>", html
+    assert_equal wrap_html("<h1>Title</h1>\n<p>Text</p>"), html
   end
 
   def test_escape_ampersand
@@ -76,7 +94,7 @@ class TestGenerator < Minitest::Test
     generator = Mdsmith::Generator.new(ast)
     html = generator.generate
 
-    assert_equal "<p>A &amp; B</p>", html
+    assert_equal wrap_html("<p>A &amp; B</p>"), html
   end
 
   def test_escape_less_than
@@ -87,7 +105,7 @@ class TestGenerator < Minitest::Test
     generator = Mdsmith::Generator.new(ast)
     html = generator.generate
 
-    assert_equal "<p>1 &lt; 2</p>", html
+    assert_equal wrap_html("<p>1 &lt; 2</p>"), html
   end
 
   def test_escape_greater_than
@@ -98,7 +116,7 @@ class TestGenerator < Minitest::Test
     generator = Mdsmith::Generator.new(ast)
     html = generator.generate
 
-    assert_equal "<p>2 &gt; 1</p>", html
+    assert_equal wrap_html("<p>2 &gt; 1</p>"), html
   end
 
   def test_escape_double_quote
@@ -109,7 +127,7 @@ class TestGenerator < Minitest::Test
     generator = Mdsmith::Generator.new(ast)
     html = generator.generate
 
-    assert_equal "<p>Say &quot;hello&quot;</p>", html
+    assert_equal wrap_html("<p>Say &quot;hello&quot;</p>"), html
   end
 
   def test_escape_single_quote
@@ -120,7 +138,7 @@ class TestGenerator < Minitest::Test
     generator = Mdsmith::Generator.new(ast)
     html = generator.generate
 
-    assert_equal "<p>It&#39;s fine</p>", html
+    assert_equal wrap_html("<p>It&#39;s fine</p>"), html
   end
 
   def test_escape_multiple_special_chars
@@ -131,7 +149,7 @@ class TestGenerator < Minitest::Test
     generator = Mdsmith::Generator.new(ast)
     html = generator.generate
 
-    assert_equal "<h1>&lt;script&gt;alert(&#39;XSS&#39;)&lt;/script&gt;</h1>", html
+    assert_equal wrap_html("<h1>&lt;script&gt;alert(&#39;XSS&#39;)&lt;/script&gt;</h1>"), html
   end
 
   def test_generate_complex_document
@@ -149,8 +167,8 @@ class TestGenerator < Minitest::Test
     generator = Mdsmith::Generator.new(ast)
     html = generator.generate
 
-    expected = "<h1>Main Title</h1>\n<p>First paragraph.</p>\n<h2>Subtitle</h2>\n<p>Second paragraph.</p>"
-    assert_equal expected, html
+    expected_body = "<h1>Main Title</h1>\n<p>First paragraph.</p>\n<h2>Subtitle</h2>\n<p>Second paragraph.</p>"
+    assert_equal wrap_html(expected_body), html
   end
 
   def test_generate_simple_list
@@ -162,8 +180,8 @@ class TestGenerator < Minitest::Test
 
     html = Mdsmith::Generator.new(ast).generate
 
-    expected = "<ul>\n  <li>apple</li>\n  <li>banana</li>\n</ul>"
-    assert_equal expected, html
+    expected_body = "<ul>\n  <li>apple</li>\n  <li>banana</li>\n</ul>"
+    assert_equal wrap_html(expected_body), html
   end
 
   def test_generate_list_item_has_indentation
@@ -192,8 +210,8 @@ class TestGenerator < Minitest::Test
 
     html = Mdsmith::Generator.new(ast).generate
 
-    expected = "<ul>\n  <li>fruit\n    <ul>\n      <li>apple</li>\n    </ul>\n  </li>\n  <li>vegetable</li>\n</ul>"
-    assert_equal expected, html
+    expected_body = "<ul>\n  <li>fruit\n    <ul>\n      <li>apple</li>\n    </ul>\n  </li>\n  <li>vegetable</li>\n</ul>"
+    assert_equal wrap_html(expected_body), html
   end
 
   def test_generate_list_escapes_html
